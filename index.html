@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071a33">
+  <meta name="description" content="Análisis longitudinal de series audiométricas y clasificación de trayectorias auditivas.">
+  <title>dBYEAR · Evolución audiométrica</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="gate" class="gate" aria-live="polite">
+    <section class="gate-card">
+      <div class="brand-mark" aria-hidden="true">dB<span>Y</span></div>
+      <p class="eyebrow">CLÍNICA BARAJAS</p>
+      <h1>dBYEAR</h1>
+      <p class="gate-lead">Evolución audiométrica longitudinal</p>
+
+      <form id="unlock-form" class="gate-form hidden">
+        <label for="unlock-pass">Contraseña del almacén local</label>
+        <div class="password-row">
+          <input id="unlock-pass" type="password" autocomplete="current-password" required>
+          <button type="button" class="icon-btn password-toggle" data-target="unlock-pass" aria-label="Mostrar contraseña">Ver</button>
+        </div>
+        <p id="unlock-error" class="form-error" role="alert"></p>
+        <button class="btn primary wide" type="submit">Desbloquear</button>
+        <div class="gate-links">
+          <button id="restore-from-gate" type="button" class="text-btn">Restaurar copia cifrada</button>
+          <button id="reset-vault" type="button" class="text-btn danger-text">Borrar almacén local</button>
+        </div>
+      </form>
+
+      <form id="setup-form" class="gate-form hidden">
+        <p class="security-copy">Cree una contraseña para cifrar los datos en este navegador. No se envía al servidor y no puede recuperarse.</p>
+        <label for="setup-pass">Nueva contraseña <span>mínimo 10 caracteres</span></label>
+        <div class="password-row">
+          <input id="setup-pass" type="password" minlength="10" autocomplete="new-password" required>
+          <button type="button" class="icon-btn password-toggle" data-target="setup-pass" aria-label="Mostrar contraseña">Ver</button>
+        </div>
+        <label for="setup-confirm">Repetir contraseña</label>
+        <input id="setup-confirm" type="password" minlength="10" autocomplete="new-password" required>
+        <p id="setup-error" class="form-error" role="alert"></p>
+        <button class="btn primary wide" type="submit">Crear almacén seguro</button>
+      </form>
+
+      <div id="gate-initial" class="gate-form hidden">
+        <button id="start-setup" class="btn primary wide" type="button">Crear almacén seguro</button>
+        <button id="start-demo" class="btn secondary wide" type="button">Explorar con un caso de ejemplo</button>
+        <button id="restore-initial" class="text-btn" type="button">Restaurar copia cifrada</button>
+      </div>
+      <p class="privacy-note"><span class="lock-dot"></span> Cifrado AES-GCM · almacenamiento exclusivo en este dispositivo</p>
+    </section>
+  </div>
+
+  <div id="app" class="app-shell hidden">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <button id="mobile-patients" class="icon-btn mobile-only" aria-label="Mostrar pacientes">☰</button>
+        <div class="mini-mark">dB<span>Y</span></div>
+        <div>
+          <strong>dBYEAR</strong>
+          <small>Evolución audiométrica</small>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span id="storage-badge" class="secure-badge">Almacén cifrado</span>
+        <button id="import-btn" class="btn ghost" type="button">Importar CSV</button>
+        <button id="backup-btn" class="btn ghost" type="button">Copia de seguridad</button>
+        <button id="lock-btn" class="icon-btn" type="button" title="Bloquear" aria-label="Bloquear almacén">Bloquear</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside id="patient-sidebar" class="sidebar">
+        <div class="sidebar-head">
+          <div>
+            <p class="eyebrow">HISTÓRICO</p>
+            <h2>Pacientes</h2>
+          </div>
+          <button id="new-patient-btn" class="btn primary compact" type="button">Nuevo</button>
+        </div>
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="patient-search" type="search" placeholder="Buscar código o nombre">
+        </label>
+        <div id="patient-list" class="patient-list"></div>
+        <div class="sidebar-foot">
+          <p>Los nombres son opcionales. Para investigación, utilice códigos seudonimizados.</p>
+        </div>
+      </aside>
+
+      <main id="main" class="main-content">
+        <section id="empty-state" class="empty-state hidden">
+          <div class="empty-visual" aria-hidden="true">
+            <svg viewBox="0 0 180 120"><path d="M20 22v78h142M36 80l28-18 25 7 31-35 28 14"/><circle cx="36" cy="80" r="4"/><circle cx="64" cy="62" r="4"/><circle cx="89" cy="69" r="4"/><circle cx="120" cy="34" r="4"/><circle cx="148" cy="48" r="4"/></svg>
+          </div>
+          <h2>Empiece con una serie audiométrica</h2>
+          <p>Cree un paciente o importe el histórico descargado desde su hoja de cálculo.</p>
+          <div class="empty-actions">
+            <button id="empty-new" class="btn primary" type="button">Crear paciente</button>
+            <button id="empty-import" class="btn secondary" type="button">Importar CSV</button>
+          </div>
+        </section>
+
+        <section id="patient-view" class="hidden">
+          <div class="patient-header">
+            <div>
+              <div class="title-line">
+                <h1 id="patient-title"></h1>
+                <span id="evidence-pill" class="pill"></span>
+              </div>
+              <p id="patient-subtitle" class="muted"></p>
+            </div>
+            <div class="patient-actions">
+              <button id="edit-patient-btn" class="btn ghost-dark" type="button">Editar</button>
+              <button id="add-audiogram-btn" class="btn primary" type="button">Añadir audiograma</button>
+              <button id="print-btn" class="btn secondary" type="button">Imprimir informe</button>
+            </div>
+          </div>
+
+          <nav class="tabs" aria-label="Secciones del paciente">
+            <button class="tab active" data-tab="summary" type="button">Resumen</button>
+            <button class="tab" data-tab="history" type="button">Audiogramas</button>
+            <button class="tab" data-tab="data" type="button">Serie de datos</button>
+            <button class="tab" data-tab="criteria" type="button">Criterios</button>
+          </nav>
+
+          <div id="tab-summary" class="tab-panel">
+            <div id="quality-banner" class="quality-banner"></div>
+            <div id="classification-cards" class="classification-grid"></div>
+
+            <article class="panel interpretation-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">CONCLUSIÓN CLÍNICA</p>
+                  <h2>Lectura longitudinal</h2>
+                </div>
+                <button id="copy-conclusion" class="btn ghost-dark compact" type="button">Copiar texto</button>
+              </div>
+              <p id="clinical-conclusion" class="clinical-copy"></p>
+            </article>
+
+            <div class="charts-grid">
+              <article class="panel chart-panel wide-panel">
+                <div class="panel-heading">
+                  <div><p class="eyebrow">HISTÓRICO</p><h2>Audiogramas superpuestos</h2></div>
+                  <div class="legend"><span class="red-line">OD</span><span class="blue-line">OI</span><span class="latest-line">Último</span></div>
+                </div>
+                <div id="audiogram-chart" class="chart" role="img" aria-label="Audiogramas históricos superpuestos"></div>
+              </article>
+              <article class="panel chart-panel">
+                <div class="panel-heading"><div><p class="eyebrow">UMBRAL GLOBAL</p><h2>Evolución del PTA4</h2></div></div>
+                <div id="pta-chart" class="chart" role="img" aria-label="Evolución temporal del PTA4"></div>
+              </article>
+              <article class="panel chart-panel">
+                <div class="panel-heading"><div><p class="eyebrow">CRONOAUDIOGRAMA</p><h2>Cambio por frecuencia</h2></div><span class="unit-label">dB/año</span></div>
+                <div id="chrono-chart" class="chart" role="img" aria-label="Cambio anual por frecuencia"></div>
+              </article>
+            </div>
+          </div>
+
+          <div id="tab-history" class="tab-panel hidden">
+            <article class="panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">SERIE COMPLETA</p><h2>Audiogramas</h2></div>
+                <button id="history-add" class="btn primary compact" type="button">Añadir</button>
+              </div>
+              <div id="history-cards" class="history-cards"></div>
+            </article>
+          </div>
+
+          <div id="tab-data" class="tab-panel hidden">
+            <article class="panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">DATOS FUENTE</p><h2>Umbrales por fecha</h2></div>
+                <button id="export-patient-csv" class="btn secondary compact" type="button">Exportar CSV</button>
+              </div>
+              <div id="data-table-wrap" class="table-wrap"></div>
+            </article>
+          </div>
+
+          <div id="tab-criteria" class="tab-panel hidden">
+            <article class="panel criteria-panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">METODOLOGÍA</p><h2>Reglas de clasificación</h2></div>
+                <button id="reset-criteria" class="btn ghost-dark compact" type="button">Restablecer</button>
+              </div>
+              <p class="method-intro">La categoría no sustituye a los indicadores continuos. Se calcula por oído a partir de la pendiente del PTA4, su intervalo de confianza, el cambio previsto a cuatro años y la variabilidad residual.</p>
+              <form id="criteria-form" class="criteria-form">
+                <label>Número mínimo de audiogramas<input id="crit-min-n" type="number" min="3" max="20" step="1"></label>
+                <label>Seguimiento mínimo (años)<input id="crit-min-years" type="number" min="0.5" max="20" step="0.5"></label>
+                <label>Cambio clínicamente relevante a 4 años (dB)<input id="crit-change" type="number" min="2" max="20" step="0.5"></label>
+                <label>RMSE máximo compatible con linealidad (dB)<input id="crit-rmse" type="number" min="2" max="15" step="0.5"></label>
+                <button class="btn primary" type="submit">Guardar criterios</button>
+              </form>
+              <div class="rules-list">
+                <div><span class="rule-dot stable"></span><strong>Estable consistente</strong><p>El IC95% del cambio previsto a cuatro años queda dentro de ± el margen clínico y la variabilidad es baja.</p></div>
+                <div><span class="rule-dot uncertain"></span><strong>Tendencia progresiva no confirmada</strong><p>Hay indicios de empeoramiento, pero no alcanza simultáneamente los criterios de magnitud, precisión y consistencia.</p></div>
+                <div><span class="rule-dot progress"></span><strong>Progresión sostenida</strong><p>El cambio previsto supera el margen clínico, el límite inferior del IC95% es mayor que cero y la variabilidad es baja.</p></div>
+                <div><span class="rule-dot variable"></span><strong>Trayectoria variable o no lineal</strong><p>La dispersión residual supera el límite o aparece una mejoría aparente relevante que exige revisar condiciones de medida.</p></div>
+              </div>
+              <aside class="method-note"><strong>Estado adicional:</strong> «Evidencia insuficiente» se muestra cuando no se alcanza el número de medidas o el tiempo mínimo. No constituye una quinta trayectoria.</aside>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="patient-dialog" class="modal">
+    <form id="patient-form" method="dialog">
+      <div class="modal-head"><div><p class="eyebrow">IDENTIFICACIÓN</p><h2 id="patient-dialog-title">Nuevo paciente</h2></div><button class="icon-btn close-dialog" type="button" aria-label="Cerrar">×</button></div>
+      <input id="patient-id" type="hidden">
+      <div class="form-grid">
+        <label>Código del paciente *<input id="patient-code" required maxlength="40" placeholder="p. ej., 49266"></label>
+        <label>Nombre o iniciales <span>opcional</span><input id="patient-name" maxlength="80"></label>
+        <label>Fecha de nacimiento <span>opcional</span><input id="patient-dob" type="date"></label>
+        <label class="full">Observaciones <span>opcional</span><textarea id="patient-notes" rows="3"></textarea></label>
+      </div>
+      <p id="patient-form-error" class="form-error"></p>
+      <div class="modal-actions"><button id="delete-patient" class="btn danger hidden" type="button">Eliminar paciente</button><span class="spacer"></span><button class="btn secondary close-dialog" type="button">Cancelar</button><button class="btn primary" value="save" type="submit">Guardar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="audiogram-dialog" class="modal modal-wide">
+    <form id="audiogram-form" method="dialog">
+      <div class="modal-head"><div><p class="eyebrow">MEDICIÓN</p><h2 id="audiogram-dialog-title">Añadir audiograma</h2></div><button class="icon-btn close-dialog" type="button" aria-label="Cerrar">×</button></div>
+      <input id="audiogram-id" type="hidden">
+      <div class="form-grid meta-grid">
+        <label>Fecha *<input id="audiogram-date" type="date" required></label>
+        <label>Transductor <span>opcional</span><input id="audiogram-transducer" maxlength="60" placeholder="p. ej., TDH-39"></label>
+      </div>
+      <div class="threshold-entry">
+        <table id="threshold-table">
+          <thead><tr><th>Oído</th><th>250</th><th>500</th><th>750</th><th>1k</th><th>1,5k</th><th>2k</th><th>3k</th><th>4k</th><th>6k</th><th>8k</th></tr></thead>
+          <tbody><tr data-ear="od"><th class="ear-od">OD</th></tr><tr data-ear="oi"><th class="ear-oi">OI</th></tr></tbody>
+        </table>
+      </div>
+      <p class="field-help">Umbrales en dB HL. Se admiten valores entre −10 y 130; deje en blanco las frecuencias no exploradas.</p>
+      <label>Observaciones <span>opcional</span><textarea id="audiogram-notes" rows="2"></textarea></label>
+      <p id="audiogram-form-error" class="form-error"></p>
+      <div class="modal-actions"><button id="delete-audiogram" class="btn danger hidden" type="button">Eliminar</button><span class="spacer"></span><button class="btn secondary close-dialog" type="button">Cancelar</button><button class="btn primary" value="save" type="submit">Guardar audiograma</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="import-dialog" class="modal">
+    <form id="import-form" method="dialog">
+      <div class="modal-head"><div><p class="eyebrow">IMPORTACIÓN</p><h2>Importar histórico CSV</h2></div><button class="icon-btn close-dialog" type="button" aria-label="Cerrar">×</button></div>
+      <div class="import-guide">
+        <p>Admite el formato de la pestaña <strong>IMPOAUDIO</strong>: FECHA, AUD250OD…AUD8KOD y AUD250OI…AUD8KOI. Si el archivo no incluye NP/ID, las filas se añadirán al paciente abierto.</p>
+      </div>
+      <label class="file-drop" for="csv-file"><strong>Seleccione un archivo .csv</strong><span>Separadores admitidos: coma, punto y coma o tabulador</span><input id="csv-file" type="file" accept=".csv,text/csv"></label>
+      <div id="import-preview" class="import-preview hidden"></div>
+      <p id="import-error" class="form-error"></p>
+      <div class="modal-actions"><button class="btn secondary close-dialog" type="button">Cancelar</button><button id="confirm-import" class="btn primary" type="submit" disabled>Importar</button></div>
+    </form>
+  </dialog>
+
+  <input id="backup-file" type="file" accept=".dbyear,application/json" class="hidden">
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
